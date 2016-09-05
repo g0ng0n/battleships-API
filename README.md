@@ -1,4 +1,4 @@
-# Game API Project Overview for the FSND Program
+# Game API Project 
 
 #BATTLESHIPS
 
