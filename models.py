@@ -42,12 +42,20 @@ class Game(ndb.Model):
         game.put()
         return game
 
+    @classmethod
+    def join_game(cls, player):
 
-    def to_form(self, message):
+        game = Game(player2=player.key,
+                    game_over=False)
+        game.put()
+        return game
+
+
+    def to_form(self, message, player_name):
         """Returns a GameForm representation of the Game"""
         form = GameForm()
         form.urlsafe_key = self.key.urlsafe()
-        form.player_name = self.player1.get().name
+        form.player_name = player_name
         form.game_over = self.game_over
         form.message = message
         return form

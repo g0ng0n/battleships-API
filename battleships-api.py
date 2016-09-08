@@ -14,6 +14,9 @@ PLAYER_REQUEST = endpoints.ResourceContainer(player_name=messages.StringField(1)
 
 GAME_REQUESTS = endpoints.ResourceContainer(player_name=messages.StringField(1))
 
+JOIN_GAME_REQUEST = endpoints.ResourceContainer(player_name=messages.StringField(1),
+                                                urlsafe_key=messages.StringField(2))
+
 
 
 @endpoints.api(name='battleships', version='v1')
@@ -25,14 +28,19 @@ class BattleshipApi(remote.Service):
                       http_method='POST')
     def create_player(self, request):
         """Create a User. Requires a unique playername"""
-        if Player.query(Player.name == request.player_name).get():
-            raise endpoints.ConflictException(
-                'A User with that name already exists!')
-
-        if gameutils.getRegex(request.email) == None:
-            print(' ERROR - invalid email, please try again')
-            raise endpoints.ConflictException(
-                'invalid email, please try again!')
+        if request.player_name:
+            if Player.query(Player.name == request.player_name).get():
+                raise endpoints.ConflictException(
+                    'A User with that name already exists!')
+        else:
+            raise endpoints.BadRequestException('verify the name that you are sending in the request')
+        if request.email:
+            if gameutils.getRegex(request.email) == None:
+                print(' ERROR - invalid email, please try again')
+                raise endpoints.ConflictException(
+                    'invalid email, please try again!')
+        else:
+            raise endpoints.BadRequestException('verify the email that you are sending in the request')
 
         player = Player(name=request.player_name, email=request.email, board=Player.create_empty_board())
         player.put()
@@ -62,8 +70,36 @@ class BattleshipApi(remote.Service):
         # so it is performed out of sequence.
 
         return game.to_form('Game created!, we only need one player '
-                            'to join in order to start the game')
+                            'to join in order to start the game', player.name)
 
+
+    @endpoints.method(request_message=JOIN_GAME_REQUEST,
+                      response_message=GameForm,
+                      path='game',
+                      name='join_game',
+                      http_method='put')
+    def join_game(self, request):
+        """One of the players, creates the game and gets the game-id and gives that ID
+        to the other player in order to play between each other"""
+        player = Player.query(Player.name == request.player_name).get()
+        print player
+        if not player:
+            raise endpoints.NotFoundException(
+                'A Player with that name does not exist!, '
+                'we need a second player in order to join the game')
+        try:
+            game = gameutils.get_by_urlsafe(request.urlsafe_key, Game)
+            game.player2 = player.key
+            game.put()
+        except ValueError:
+            raise endpoints.BadRequestException('please verify the information '
+                                                'of the second player')
+
+        # Use a task queue to update the average attempts remaining.
+        # This operation is not needed to complete the creation of a new game
+        # so it is performed out of sequence.
+
+        return game.to_form('Second Player Joined the Game, we are ready to start the game!', player.name)
 
 
 api = endpoints.api_server([BattleshipApi])
