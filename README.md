@@ -31,3 +31,8 @@ When all of the squares of a ship have been hit, the ship is sunk, and the API a
 | Destroyer (or Cruiser| 3             |
 | Patrol boat          | 2             |
 
+##Design Notes: TBD
+
+
+
+##How to run the API

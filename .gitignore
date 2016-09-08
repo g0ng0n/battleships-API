@@ -17,13 +17,13 @@
 .idea/sqlDataSources.xml
 .idea/dynamic.xml
 .idea/uiDesigner.xml
-
+.idea/
 # Gradle:
 .idea/gradle.xml
 .idea/libraries
-
 # Mongo Explorer plugin:
 .idea/mongoSettings.xml
+.test/
 
 ## File-based project format:
 *.iws
@@ -141,3 +141,4 @@ ENV/
 # Google App Engine generated folder
 appengine-generated/
 
+test/
