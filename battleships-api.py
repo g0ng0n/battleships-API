@@ -2,8 +2,8 @@ import logging
 import endpoints
 import random
 import gameutils
-from models import Player, Game
-from models import GameForm, StringMessage
+from models import Player, Game, Board
+from models import GameForm, BoardForm, StringMessage
 from protorpc import remote, messages
 from google.appengine.ext import ndb
 import re
@@ -17,6 +17,8 @@ GAME_REQUESTS = endpoints.ResourceContainer(player_name=messages.StringField(1))
 JOIN_GAME_REQUEST = endpoints.ResourceContainer(player_name=messages.StringField(1),
                                                 urlsafe_key=messages.StringField(2))
 
+CREATE_EMPTY_BOARD_REQUEST = endpoints.ResourceContainer(player_name=messages.StringField(1),
+                                                urlsafe_key=messages.StringField(2))
 
 
 @endpoints.api(name='battleships', version='v1')
@@ -42,7 +44,7 @@ class BattleshipApi(remote.Service):
         else:
             raise endpoints.BadRequestException('verify the email that you are sending in the request')
 
-        player = Player(name=request.player_name, email=request.email, board=Player.create_empty_board())
+        player = Player(name=request.player_name, email=request.email)
         player.put()
 
         return StringMessage(message='Player created!'.format(request.player_name))
@@ -100,6 +102,40 @@ class BattleshipApi(remote.Service):
         # so it is performed out of sequence.
 
         return game.to_form('Second Player Joined the Game, we are ready to start the game!', player.name)
+
+    @endpoints.method(request_message=CREATE_EMPTY_BOARD_REQUEST,
+                      response_message=BoardForm,
+                      path='board',
+                      name='create_board',
+                      http_method='post')
+    def create_board(self, request):
+        """One of the players, creates the game and gets the game-id and gives that ID
+        to the other player in order to play between each other"""
+        player = Player.query(Player.name == request.player_name).get()
+        game = gameutils.get_by_urlsafe(request.urlsafe_key, Game)
+        print player
+        if not player:
+            raise endpoints.NotFoundException(
+                'A Player with that name does not exist!, '
+                'we need a second player in order to join the game')
+        if not game:
+            raise endpoints.NotFoundException(
+                'Game not found in the DB, please start a new game')
+        if not game.game_over == False:
+            raise endpoints.ConflictException(
+                'Game is over')
+        try:
+            board = Board.new_board(player,Board.create_empty_board(),game)
+            board.put()
+        except ValueError:
+            raise endpoints.BadRequestException('please verify the information '
+                                                'of the board')
+
+        # Use a task queue to update the average attempts remaining.
+        # This operation is not needed to complete the creation of a new game
+        # so it is performed out of sequence.
+
+        return board.to_form(player,board)
 
 
 api = endpoints.api_server([BattleshipApi])

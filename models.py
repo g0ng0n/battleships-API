@@ -4,13 +4,10 @@ from protorpc import messages
 from google.appengine.ext import ndb
 import random
 
-
-class Player(ndb.Model):
-    """User profile"""
-    name = ndb.StringProperty(required=True)
-    email = ndb.StringProperty()
+class Board(ndb.Model):
     board = ndb.PickleProperty(required=True, default=[])
-    moves = ndb.IntegerProperty()
+    player = ndb.KeyProperty(required=True, kind='Player')
+    game = ndb.KeyProperty(required=True, kind='Game')
 
     @classmethod
     def create_empty_board(cls):
@@ -23,6 +20,33 @@ class Player(ndb.Model):
                 grid[row].append(False)  # Append a cell
 
         return grid
+
+    @classmethod
+    def new_board(cls, player, empty_board,game):
+        """Creates and returns a new game"""
+
+        board = Board(player1=player.key,
+                    board=empty_board,
+                      game=game.key)
+        board.put()
+        return board
+
+    def to_form(self, message, player_name, board):
+        """Returns a GameForm representation of the Game"""
+        form = BoardForm()
+        form.player_name = player_name
+        form.board = board;
+        form.message = message
+        return form
+
+class Player(ndb.Model):
+    """User profile"""
+    name = ndb.StringProperty(required=True)
+    email = ndb.StringProperty()
+    board = ndb.KeyProperty(required=False, kind='Board')
+    moves = ndb.IntegerProperty()
+
+
 
 
 class Game(ndb.Model):
@@ -70,3 +94,11 @@ class GameForm(messages.Message):
     game_over = messages.BooleanField(3, required=True)
     message = messages.StringField(4, required=True)
     player_name = messages.StringField(5, required=True)
+
+class BoardForm(messages.Message):
+    """BoardForm gives the Board for a certain Player"""
+    player_name = messages.StringField(5, required=True)
+    board = messages.StringField(7,required=True)
+    message = messages.StringField(4, required=True)
+
+
