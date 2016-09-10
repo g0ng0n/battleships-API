@@ -8,6 +8,17 @@ class Board(ndb.Model):
     board = ndb.PickleProperty(required=True, default=[])
     player = ndb.KeyProperty(required=True, kind='Player')
     game = ndb.KeyProperty(required=True, kind='Game')
+    """this booleans flags serves as a switch
+        to see if the battleships are active on the board
+        If they are active the flags will be True.
+        By default they will be all False, since the player has to
+        add the ship into the board.
+        """
+    aircraft_carrier = ndb.BooleanProperty(required=True, default=False)
+    battleship = ndb.BooleanProperty(required=True, default=False)
+    submarine = ndb.BooleanProperty(required=True, default=False)
+    destroyer = ndb.BooleanProperty(required=True, default=False)
+    patrol_boat = ndb.BooleanProperty(required=True, default=False)
 
     @classmethod
     def create_empty_board(cls):
@@ -25,17 +36,22 @@ class Board(ndb.Model):
     def new_board(cls, player, empty_board,game):
         """Creates and returns a new game"""
 
-        board = Board(player1=player.key,
+        board = Board(player=player.key,
                     board=empty_board,
                       game=game.key)
         board.put()
         return board
 
-    def to_form(self, message, player_name, board):
+    def to_form(self, message, player_name, aircraft_carrier,
+                battleship, submarine, destroyer, patrol_boat):
         """Returns a GameForm representation of the Game"""
         form = BoardForm()
         form.player_name = player_name
-        form.board = board;
+        form.aircraft_carrier = aircraft_carrier
+        form.battleship = battleship
+        form.submarine = submarine
+        form.destroyer = destroyer
+        form.patrol_boat = patrol_boat
         form.message = message
         return form
 
@@ -44,6 +60,7 @@ class Player(ndb.Model):
     name = ndb.StringProperty(required=True)
     email = ndb.StringProperty()
     board = ndb.KeyProperty(required=False, kind='Board')
+    board_active = ndb.BooleanProperty(required=True, default=False)
     moves = ndb.IntegerProperty()
 
 
@@ -55,6 +72,7 @@ class Game(ndb.Model):
     game_over = ndb.BooleanProperty(required=True, default=False)
     player1 = ndb.KeyProperty(required=True, kind='Player')
     player2 = ndb.KeyProperty(required=False, kind='Player')
+
 
     @classmethod
     def new_game(cls, player):
@@ -97,8 +115,12 @@ class GameForm(messages.Message):
 
 class BoardForm(messages.Message):
     """BoardForm gives the Board for a certain Player"""
-    player_name = messages.StringField(5, required=True)
-    board = messages.StringField(7,required=True)
-    message = messages.StringField(4, required=True)
+    player_name = messages.StringField(1, required=True)
+    aircraft_carrier = messages.BooleanField(2,required=True)
+    battleship = messages.BooleanField(3,required=True)
+    submarine = messages.BooleanField(4,required=True)
+    destroyer = messages.BooleanField(5,required=True)
+    patrol_boat = messages.BooleanField(6,required=True)
+    message = messages.StringField(7, required=True)
 
 

@@ -106,26 +106,40 @@ class BattleshipApi(remote.Service):
     @endpoints.method(request_message=CREATE_EMPTY_BOARD_REQUEST,
                       response_message=BoardForm,
                       path='board',
-                      name='create_board',
+                      name='create_empty_board',
                       http_method='post')
-    def create_board(self, request):
+    def create_empty_board(self, request):
         """One of the players, creates the game and gets the game-id and gives that ID
         to the other player in order to play between each other"""
         player = Player.query(Player.name == request.player_name).get()
         game = gameutils.get_by_urlsafe(request.urlsafe_key, Game)
         print player
+        """we validate that the player is in the Data Base"""
         if not player:
             raise endpoints.NotFoundException(
                 'A Player with that name does not exist!, '
                 'we need a second player in order to join the game')
+
+        """we validate that the game where we want to create the board exists"""
         if not game:
             raise endpoints.NotFoundException(
                 'Game not found in the DB, please start a new game')
+
+        """we validate that the game where we want to create the board is not Over"""
         if not game.game_over == False:
             raise endpoints.ConflictException(
                 'Game is over')
+
+        """we validate that the board of the player is active, the player can't create
+                    multiple boards for the same Game"""
+        if player.board & player.board_active:
+            raise endpoints.ConflictException(
+                'This player has already an empty board have already a board')
+
         try:
-            board = Board.new_board(player,Board.create_empty_board(),game)
+            board = Board.new_board(player, Board.create_empty_board(), game)
+            player.board_active = True
+            player.put()
             board.put()
         except ValueError:
             raise endpoints.BadRequestException('please verify the information '
@@ -135,7 +149,8 @@ class BattleshipApi(remote.Service):
         # This operation is not needed to complete the creation of a new game
         # so it is performed out of sequence.
 
-        return board.to_form(player,board)
+        return board.to_form("Board created", player.name, board.aircraft_carrier,
+                             board.battleship, board.submarine, board.destroyer, board.patrol_boat)
 
 
 api = endpoints.api_server([BattleshipApi])

@@ -1,5 +1,6 @@
 import logging
 from google.appengine.ext import ndb
+import re
 import endpoints
 
 def getRegex(email):
