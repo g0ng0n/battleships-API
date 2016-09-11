@@ -19,6 +19,7 @@ class Board(ndb.Model):
     submarine = ndb.BooleanProperty(required=True, default=False)
     destroyer = ndb.BooleanProperty(required=True, default=False)
     patrol_boat = ndb.BooleanProperty(required=True, default=False)
+    active = ndb.BooleanProperty(required=True, default=False)
 
     @classmethod
     def create_empty_board(cls):
@@ -27,8 +28,8 @@ class Board(ndb.Model):
             # Add an empty array that will hold each cell
             # in this row
             grid.append([])
-            for column in range(4):
-                grid[row].append(False)  # Append a cell
+            for column in range(10):
+                grid[row].append("W")  # Append a cell
 
         return grid
 

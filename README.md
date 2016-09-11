@@ -23,13 +23,13 @@ When all of the squares of a ship have been hit, the ship is sunk, and the API a
 
 #Types of Ships for each player
 
-| Class of Ship        | Size          |
-|----------------------|---------------|
-| Aircraft carrier     | 5             |
-| Battleship           | 4             |
-| Submarine            | 3             |
-| Destroyer (or Cruiser| 3             |
-| Patrol boat          | 2             |
+| Class of Ship        | Size          |IDS    |
+|----------------------|---------------|-------|
+| Aircraft carrier     | 5             |AC5    |
+| Battleship           | 4             |BS4    |
+| Submarine            | 3             |SUB3   |
+| Destroyer (or Cruiser| 3             |DES3   |
+| Patrol boat          | 2             |PB2    |
 
 ##Design Notes: TBD
 
