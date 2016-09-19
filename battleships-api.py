@@ -26,6 +26,11 @@ ASSIGN_SHIP_ON_BOARD_REQUEST = endpoints.ResourceContainer(player_name=messages.
                                                            orientation=messages.StringField(4),
                                                            start_x_position=messages.IntegerField(5),
                                                            start_y_position=messages.IntegerField(6))
+MAKE_MOVE_REQUEST = endpoints.ResourceContainer(player_name=messages.StringField(1),
+                                                           urlsafe_key=messages.StringField(2),
+                                                           orientation=messages.StringField(4),
+                                                           start_x_position=messages.IntegerField(5),
+                                                           start_y_position=messages.IntegerField(6))
 
 GET_BOARD_REQUEST = endpoints.ResourceContainer(player_name=messages.StringField(1),
                                                 urlsafe_key=messages.StringField(2))
@@ -250,6 +255,48 @@ class BattleshipApi(remote.Service):
         try:
             gameutils.log_board_on_console(board)
             board.put()
+        except ValueError:
+            raise endpoints.BadRequestException('please verify the information ')
+
+        return StringMessage(message='Boat Assigned!'.format(request.player_name))
+
+    @endpoints.method(request_message=MAKE_MOVE_REQUEST,
+                      response_message=StringMessage,
+                      path='board',
+                      name='make_move',
+                      http_method='put')
+    def make_move(self, request):
+        """One of the players, tries to hit the opponent boat"""
+
+        player = Player.query(Player.name == request.player_name).get()
+
+        """we validate that the player is in the Data Base"""
+        if not player:
+            raise endpoints.NotFoundException('player not found')
+
+        game = gameutils.get_by_urlsafe(request.urlsafe_key, Game)
+        """we validate that the game where we want to create the board exists"""
+        if not game:
+            raise endpoints.NotFoundException(
+                'Game not found in the DB, please start a new game')
+
+        board = Board.query(Board.key == player.board).get()
+        """we validate that the board where we want to create the board exists"""
+        if not board:
+            raise endpoints.NotFoundException('board not found')
+
+        """we validate that the board of the player is active, the player can't create
+            multiple boards for the same Game"""
+        if not player.board and not player.board_active:
+            raise endpoints.ConflictException(
+                'This player has already an empty board have already a board')
+
+        if player.board != board.key:
+            raise endpoints.ConflictException('the board for this player is not the proper')
+
+
+
+        try:
         except ValueError:
             raise endpoints.BadRequestException('please verify the information ')
 

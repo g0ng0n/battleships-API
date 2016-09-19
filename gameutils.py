@@ -94,6 +94,16 @@ def place_boat_in_board(board, start_x_position, start_y_position, ship, orienta
     activate_boat_on_board(ship, board)
     return not_valid
 
+def check_if_boat_on_pos(board, x, y):
+
+    hitted = False
+    j = x - 1
+    y = y - 1
+
+    if board.board[y][j] == "B":
+        hitterd = True
+
+    return hitted
 
 def check_if_boat_is_active(ship, board):
     is_active = False
