@@ -44,6 +44,12 @@ def get_by_urlsafe(urlsafe, model):
         raise ValueError('Incorrect Kind')
     return entity
 
+def valid_target_pointed(x_pos,y_pos):
+
+    if (x_pos < 0 or y_pos < 0):
+        return False
+    else:
+        return True
 
 def valid_positions(start_x_position, start_y_position, ship,orientation):
     """We check here if the position that the user sent is valid to assign in the board Game"""
@@ -59,6 +65,13 @@ def valid_positions(start_x_position, start_y_position, ship,orientation):
 
     return not_valid
 
+def search_in_board(board, x_pos, y_pos):
+    result = board.board[y_pos][x_pos]
+
+    if result != "" and result != False:
+        return SHIPS_IDS[result]
+    else:
+        return "error"
 
 def place_boat_in_board(board, start_x_position, start_y_position, ship, orientation):
     """We place the board in the game and activate the board"""
@@ -72,22 +85,22 @@ def place_boat_in_board(board, start_x_position, start_y_position, ship, orienta
         while j < end_j:
             print "position"
             print "x" + str(j) + "y" + str(y)
-            if board.board[y][j] != "B":
-                board.board[y][j] = "B"
-                j = j + 1
-            else:
+            if board.board[y][j] == False:
                 return True
+            else:
+                board.board[y][j] = ship
+                j = j + 1
 
     elif orientation == "vertical":
         j = start_x_position - 1
         y = start_y_position - 1
         end_j = start_x_position + (SHIPS_IDS[ship] - 1)
         while j < end_j:
-            if board.board[j][y] != "B":
-                board.board[j][y] = "B"
-                j = j + 1
-            else:
+            if board.board[j][y] == False:
                 return True
+            else:
+                board.board[j][y] = ship
+                j = j + 1
 
     print ("llega a activar")
 

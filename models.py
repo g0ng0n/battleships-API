@@ -8,17 +8,7 @@ class Board(ndb.Model):
     board = ndb.PickleProperty(required=True, default=[])
     player = ndb.KeyProperty(required=True, kind='Player')
     game = ndb.KeyProperty(required=True, kind='Game')
-    """this booleans flags serves as a switch
-        to see if the battleships are active on the board
-        If they are active the flags will be True.
-        By default they will be all False, since the player has to
-        add the ship into the board.
-        """
-    aircraft_carrier = ndb.BooleanProperty(required=True, default=False)
-    battleship = ndb.BooleanProperty(required=True, default=False)
-    submarine = ndb.BooleanProperty(required=True, default=False)
-    destroyer = ndb.BooleanProperty(required=True, default=False)
-    patrol_boat = ndb.BooleanProperty(required=True, default=False)
+
     active = ndb.BooleanProperty(required=True, default=False)
 
     @classmethod
@@ -29,9 +19,16 @@ class Board(ndb.Model):
             # in this row
             grid.append([])
             for column in range(10):
-                grid[row].append("W")  # Append a cell
+                grid[row].append(False)  # Append a cell
 
         return grid
+
+
+    @classmethod
+    def deactivate(cls):
+        cls.active = False
+        cls.put()
+
 
     @classmethod
     def new_board(cls, player, empty_board,game):
@@ -42,6 +39,12 @@ class Board(ndb.Model):
                       game=game.key)
         board.put()
         return board
+
+    @classmethod
+    def add_target(cls, x,y, result):
+        """Creates and returns a new game"""
+        cls.board[y,x] = result
+        cls.put()
 
     def to_form(self, message, player_name, aircraft_carrier,
                 battleship, submarine, destroyer, patrol_boat):
@@ -64,8 +67,81 @@ class Player(ndb.Model):
     board_active = ndb.BooleanProperty(required=True, default=False)
     moves = ndb.IntegerProperty()
 
+class Score(ndb.model):
+    aircraft_carrier = ndb.PickleProperty(required=True, default=[])
+    battleship = ndb.PickleProperty(required=True, default=[])
+    submarine = ndb.PickleProperty(required=True, default=[])
+    destroyer = ndb.PickleProperty(required=True, default=[])
+    patrol_boat = ndb.PickleProperty(required=True, default=[])
+    board = ndb.KeyProperty(required=False, kind='Board')
+    player = ndb.KeyProperty(required=True, kind='Player')
+    game = ndb.KeyProperty(required=True, kind='Game')
 
+    @classmethod
+    def new_score(cls, player, game):
+        """Creates and returns a new game"""
 
+        score = Score(player=player.key,
+                      board=player.board,
+                      game=game.key)
+        score.put()
+        return score
+
+    def target_hitted(self, player, board, game, result):
+        """Score the hit"""
+        self.game = game
+        self.player = player
+        self.board = board
+        message = self.check_boat(result)
+        self.put()
+
+        return message
+
+    def check_if_win(self):
+        if self.battleship.lenght == 4 and self.aircraft_carrier ==5 and self.destroyer == 3 and self.submarine ==3 and self.patrol_boat ==2:
+            return True
+
+    def check_boat(self, result):
+        if result == "AC5":
+            if self.aircraft_carrier.lenght == 4:
+                self.aircraft_carrier.append(result)
+                return "You sunk the Aircraft carrier"
+            else:
+                self.aircraft_carrier.append(result)
+                return "Boat Hitted"
+
+        elif result == "BS4":
+            if self.battleship.lenght == 3:
+                self.battleship.append(result)
+                return "You sunk the Battleship"
+            else:
+                self.battleship.append(result)
+                return "Boat Hitted"
+
+        elif result == "SUB3":
+            if self.submarine.lenght == 2:
+                self.submarine.append(result)
+                return "You sunk the Submarine"
+            else:
+                self.submarine.append(result)
+                return "Boat Hitted"
+        elif result == "DES3":
+            if self.battleship.lenght == 2:
+                self.battleship.append(result)
+                return "You sunk the Destroye"
+            else:
+                self.battleship.append(result)
+                return "Boat Hitted"
+
+        elif result == "PB2":
+            if self.patrol_boat.lenght == 1:
+                self.patrol_boat.append(result)
+                return "You sunk the Destroye"
+            else:
+                self.patrol_boat.append(result)
+                return "Boat Hitted"
+        else:
+            print("There is no boat with that id")
 
 class Game(ndb.Model):
     """Game object"""
@@ -85,14 +161,10 @@ class Game(ndb.Model):
         game.put()
         return game
 
-    @classmethod
-    def join_game(cls, player):
-
-        game = Game(player2=player.key,
-                    game_over=False)
-        game.put()
-        return game
-
+    def add_move_to_history(self, x, y, player):
+        move = x + " " + y + " " + player
+        self.history.append(move)
+        self.put()
 
     def to_form(self, message, player_name):
         """Returns a GameForm representation of the Game"""

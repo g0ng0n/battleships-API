@@ -3,7 +3,7 @@ import endpoints
 import random
 import gameutils
 from gameutils import SHIPS_IDS
-from models import Player, Game, Board
+from models import Player, Game, Board, Score
 from models import GameForm, BoardForm, StringMessage
 from protorpc import remote, messages
 from google.appengine.ext import ndb
@@ -28,9 +28,8 @@ ASSIGN_SHIP_ON_BOARD_REQUEST = endpoints.ResourceContainer(player_name=messages.
                                                            start_y_position=messages.IntegerField(6))
 MAKE_MOVE_REQUEST = endpoints.ResourceContainer(player_name=messages.StringField(1),
                                                            urlsafe_key=messages.StringField(2),
-                                                           orientation=messages.StringField(4),
-                                                           start_x_position=messages.IntegerField(5),
-                                                           start_y_position=messages.IntegerField(6))
+                                                           x_position=messages.IntegerField(3),
+                                                           y_position=messages.IntegerField(4))
 
 GET_BOARD_REQUEST = endpoints.ResourceContainer(player_name=messages.StringField(1),
                                                 urlsafe_key=messages.StringField(2))
@@ -294,13 +293,28 @@ class BattleshipApi(remote.Service):
         if player.board != board.key:
             raise endpoints.ConflictException('the board for this player is not the proper')
 
+        if not gameutils.valid_target_pointed(request.x_position, request.y_position):
+            raise endpoints.ConflictException('the targeted position is not ok')
 
 
         try:
+            result = gameutils.search_in_board(board, request.x_position, request.y_position)
+
+            if result == "error":
+                raise endpoints.ConflictException('there is a problem with the BOARD')
+            else:
+                score = Score.query(Score.player_name == player.name, Score.board == board, Score.game == game)
+                board.add_target(request.x_position, request.y_position)
+                game.add_move_to_history(request.x_position, request.y_position, player.name)
+                message = score.target_hitted(player,request.x_position, request.y_position, board, game)
+                if score.check_if_win():
+                    message = "You sunk the last Boat, you win!!!"
+                    board.deactivate()
+                return StringMessage(message=message)
+
         except ValueError:
             raise endpoints.BadRequestException('please verify the information ')
 
-        return StringMessage(message='Boat Assigned!'.format(request.player_name))
 
 
 api = endpoints.api_server([BattleshipApi])
